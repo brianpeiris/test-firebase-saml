@@ -13,3 +13,6 @@ form {
 .error {
   color: red;
 }
+.userDetails {
+  white-space: pre;
+}

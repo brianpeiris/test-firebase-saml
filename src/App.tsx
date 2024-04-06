@@ -9,9 +9,14 @@ import {
   SAMLAuthProvider,
   signInWithRedirect,
   getRedirectResult,
+  ParsedToken,
 } from "firebase/auth";
 
 import "./App.css";
+
+interface ExtendedToken extends ParsedToken {
+  sign_in_attributes?: Record<string, string>;
+}
 
 const SAML_PROVIDER_ID = "saml.test";
 const FIREBASE_CONFIG = {
@@ -28,7 +33,7 @@ const auth = getAuth(app);
 function App() {
   const [email, setEmail] = useState("foo@example.com");
   const [password, setPassword] = useState("passw0rd");
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userDetails, setUserDetails] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function signUp(email: string, password: string) {
@@ -68,7 +73,11 @@ function App() {
         const result = await getRedirectResult(auth);
         if (result) {
           const user = result.user;
-          console.log("Got user from redirect", user.email);
+          console.log("Got user from redirect", {
+            email: user.email,
+            user: user,
+            tokenResult: await user.getIdTokenResult(),
+          });
           setError("");
         } else {
           console.log("No user from redirect");
@@ -79,13 +88,26 @@ function App() {
       }
     })();
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        console.log("User is signed in", user.email);
-        setUserEmail(user.email);
+        const tokenResult = await user.getIdTokenResult();
+        const attributes =
+          (tokenResult.claims?.firebase as ExtendedToken)?.sign_in_attributes ||
+          {};
+        console.log("User is signed in", {
+          email: user.email,
+          user,
+          tokenResult,
+        });
+        setUserDetails(
+          `Email: ${user.email}\n` +
+            `Firebase UID: ${user.uid}\n` +
+            `Provider UID: ${(user.providerData || [])[0]?.uid}\n` +
+            `Provider Attributes: ${JSON.stringify(attributes, null, 2)}`,
+        );
       } else {
         console.log("User is signed out");
-        setUserEmail(null);
+        setUserDetails(null);
       }
     });
     return unsubscribe;
@@ -95,8 +117,12 @@ function App() {
     <>
       <form>
         {error && <div className="error">{error}</div>}
-        {userEmail ? (
-          <div>Signed in as {userEmail}</div>
+        {userDetails ? (
+          <div className="userDetails">
+            Signed in
+            <br />
+            {userDetails}
+          </div>
         ) : (
           <div>Not signed in</div>
         )}
