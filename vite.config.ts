@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
-const FIREBASE_PROJECT_URL = "https://test-saml-9038e.firebaseapp.com";
+const FIREBASE_PROJECT_URL = "https://testsaml-7d26f.firebaseapp.com";
 
 export default defineConfig({
   plugins: [basicSsl(), react()],
